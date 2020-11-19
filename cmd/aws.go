@@ -42,6 +42,10 @@ to quickly create a Cobra application.`,
 	},
 }
 
+var (
+	awsRegion string
+)
+
 func init() {
 	rootCmd.AddCommand(awsCmd)
 
@@ -49,7 +53,7 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// awsCmd.PersistentFlags().String("foo", "", "A help for foo")
+	awsCmd.PersistentFlags().StringVarP(&awsRegion, "region", "r", "us-east-1", "Pass an AWS region")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
