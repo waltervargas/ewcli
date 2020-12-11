@@ -37,11 +37,8 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "ewcli",
-	Short: "To make my life easier",
-	Long:  `Initially to automate some regular tasks toward AWS`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	Short: "ewcli provides subcommands to deal with day to day SRE/DevOps tasks",
+	Long:  `ewcli provides subcommands to deal with day to day SRE/DevOps tasks`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
