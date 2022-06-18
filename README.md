@@ -15,6 +15,7 @@ Usage:
   ewcli aws saml [flags]
 
 Flags:
+  -l, --alias string             Pass a saml alias name from the config
   -h, --help                     help for saml
       --print-env-creds          Print Credentials as Environment Variables
   -a, --saml-account-id string   Pass an AWS Account ID
@@ -26,10 +27,30 @@ Global Flags:
   -r, --region string   Pass an AWS region (default "us-east-1")
 ```
 
-#### Example
+#### Example - with account and role
 
 ``` sh
 > ewcli aws saml -f /tmp/saml --saml-account-id 123456789 --saml-role-name GoogleReadOnlyAccess --print-env-creds                                                                                  
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_SESSION_TOKEN=...
+```
+
+#### Example - with alias
+
+Be sure to have the alias configured on your `.ewcli.yaml`
+```yaml
+saml:
+  alias:
+    'admin-dev':
+      account: 123456
+      role: users/admin
+```
+
+And execute it passing the alias flag:
+
+``` sh
+> ewcli aws saml -f /tmp/saml --alias admin-dev --print-env-creds                                                                                  
 export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
 export AWS_SESSION_TOKEN=...
