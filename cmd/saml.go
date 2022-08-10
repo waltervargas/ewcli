@@ -26,6 +26,7 @@ import (
 	b64 "encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/waltervargas/ewcli/internal/pkg/samlCredentials"
 	"io/ioutil"
 	"log"
 	"regexp"
@@ -42,14 +43,12 @@ var samlCmd = &cobra.Command{
 	Use:   "saml",
 	Short: "aws saml subcommand deals with AWS IAM AssumeRole with SAML",
 	Long:  `aws saml subcommand deals with AWS IAM AssumeRole with SAML`,
-	// Run: func(cmd *cobra.Command, args []string) {
-	// 	fmt.Println("saml called")
-	// },
-	RunE: runSaml,
+	RunE:  runSaml,
 }
 
 // SamlFlags holds flags that are used by saml subcommand
 type SamlFlags struct {
+	alias         string
 	samlPath      string
 	samlAccountID string
 	samlRoleName  string
@@ -57,10 +56,7 @@ type SamlFlags struct {
 }
 
 var (
-	samlFlags     SamlFlags
-	samlAssertion []byte
-	samlRoleArn   string
-	samlIdpArn    string
+	samlFlags SamlFlags
 )
 
 const (
@@ -70,26 +66,27 @@ const (
 func init() {
 	awsCmd.AddCommand(samlCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// samlCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// samlCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	samlCmd.Flags().StringVarP(&samlFlags.samlPath, "saml-file", "f", "/tmp/saml", "Pass a path to the file that contains SAML Assertion")
+	samlCmd.Flags().StringVarP(&samlFlags.alias, "alias", "l", "", "Pass a saml alias name from the config")
 	samlCmd.Flags().StringVarP(&samlFlags.samlAccountID, "saml-account-id", "a", "", "Pass an AWS Account ID")
 	samlCmd.Flags().StringVarP(&samlFlags.samlRoleName, "saml-role-name", "", "", "Pass an AWS IAM Role Name")
+	samlCmd.Flags().StringVarP(&samlFlags.samlPath, "saml-file", "f", "/tmp/saml", "Pass a path to the file that contains SAML Assertion")
 	samlCmd.Flags().BoolVarP(&samlFlags.printEnvCreds, "print-env-creds", "", false, "Print Credentials as Environment Variables")
 }
 
-func runSaml(cmd *cobra.Command, args []string) error {
+func runSaml(_ *cobra.Command, args []string) error {
 	return runSamlCommand(args, samlFlags)
 }
 
-func runSamlCommand(args []string, samlFlags SamlFlags) error {
+func runSamlCommand(_ []string, samlFlags SamlFlags) error {
+	// Resolve account and role to assume
+	credentials, err := samlCredentials.Resolve(samlFlags.alias, samlFlags.samlAccountID, samlFlags.samlRoleName)
+	if err != nil {
+		log.Printf("ERROR: Failed to process saml info: %v", err.Error())
+		return err
+	}
+
+	log.Printf("Using : %s { %s/%s }", samlFlags.alias, credentials.AccountID, credentials.RoleName)
+
 	// Read SAML from file
 	samlAssertion, err := ioutil.ReadFile(samlFlags.samlPath)
 	if err != nil {
@@ -97,12 +94,12 @@ func runSamlCommand(args []string, samlFlags SamlFlags) error {
 		return err
 	}
 	// Get AccountID from SAML request.
-	samlIdpArn, err := getIDPFromSAMLAssertion(samlFlags.samlAccountID, samlAssertion)
+	samlIdpArn, err := getIDPFromSAMLAssertion(credentials.AccountID, samlAssertion)
 	if err != nil {
 		log.Printf("Please validate content of file %s: %v", samlFlags.samlPath, err.Error())
 		return err
 	}
-	samlRoleArn = fmt.Sprintf("arn:aws:iam::%s:role/%s", samlFlags.samlAccountID, samlFlags.samlRoleName)
+	samlRoleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", credentials.AccountID, credentials.RoleName)
 	samlOutput, err := assumeRoleWithSAML(samlAssertion, samlIdpArn, samlRoleArn)
 	if err != nil {
 		return err
