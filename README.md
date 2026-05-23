@@ -5,8 +5,7 @@ environment variables with AWS credentals from an AWS SAML assertion.
 
 ## Usage
 
-ewcli it's based on subcommands, at the moment is only available the `aws saml`
-subcommand.
+ewcli it's based on subcommands. Currently available: `aws saml` and `athq`.
 
 ### ewcli aws saml
 
@@ -54,4 +53,39 @@ And execute it passing the alias flag:
 export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
 export AWS_SESSION_TOKEN=...
+```
+
+### ewcli athq
+
+Run an Athena query synchronously and print the result rows. Designed to
+be dropped into an AWS CloudShell session (e.g. `wget` the binary from a
+release and run it directly) so the active console credentials are used.
+
+```
+Usage:
+  ewcli athq [query] [flags]
+
+Flags:
+  -c, --catalog string           Athena data catalog (optional)
+  -d, --database string          Athena database (optional)
+  -f, --format string            Output format: tsv or csv (default "tsv")
+  -o, --output-location string   S3 output location, e.g. s3://bucket/prefix/ (optional if workgroup has one)
+      --poll-interval duration   How often to poll the query status (default 500ms)
+  -r, --region string            AWS region (defaults to AWS_REGION / shared config)
+  -w, --workgroup string         Athena workgroup (default "primary")
+```
+
+#### Example
+
+``` sh
+> ewcli athq -d walterdb "SELECT * FROM AwsCatalog.walterdb.waltertable;"
+col1	col2	col3
+...
+```
+
+If your workgroup does not have a default result location configured,
+pass one explicitly:
+
+``` sh
+> ewcli athq -o s3://my-bucket/athena-results/ "SELECT 1"
 ```
